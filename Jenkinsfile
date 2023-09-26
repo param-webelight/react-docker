@@ -1,35 +1,20 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:6-alpine'
-            args '-p 3000:3000'
-        }
-    }
+    agent any
     environment {
         CI = 'true'
     }
     stages {
-        stage('Preparation') {
+        stage('Build and Test') {
             steps {
-                // Add the user to the docker group before starting the Docker container
-                sh 'sudo usermod -aG docker $USER'
-            }
-        }
-        stage('Build') {
-            steps {
-                sh 'npm install'
-            }
-        }
-        stage('Test') {
-            steps {
-                sh './jenkins/scripts/test.sh'
+                sh 'docker inspect -f . node:6-alpine'
+                sh 'docker build -t my-react-app .'
+                sh 'docker run -p 3000:3000 my-react-app'
             }
         }
         stage('Deliver') {
             steps {
-                sh './jenkins/scripts/deliver.sh'
                 input message: 'Finished using the web site? (Click "Proceed" to continue)'
-                sh './jenkins/scripts/kill.sh'
+                sh 'docker stop $(docker ps -q)'
             }
         }
     }
